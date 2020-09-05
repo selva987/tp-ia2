@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="js/papaparse.min.js"></script>
+    <script type="text/javascript" src="js/Class.js"></script>
+    <script type="text/javascript" src="js/DataSet.js"></script>
+    <script type="text/javascript" src="js/NormalDist.js"></script>
+    <script type="text/javascript" src="js/NB.js"></script>
+</head>
+<body>
+
+<input type="text" id="classCol" size="2">
+<input type="file" id="archivo" onchange="parse();">
+
+<br>
+<input type="text" id="x1">
+<input type="text" id="x2">
+<input type="text" id="x3">
+<input type="text" id="x4">
+<button id="calcular" type="button" disabled onclick="calcular();">Calcular</button>
+<button id="byStr" type="button" disabled onclick="calcularByStr();">By STR</button>
+
+<span id="res"></span>
+
+<script>
+    var nb;
+    function calcular() {
+        var row = [document.getElementById('x1').value,
+        document.getElementById('x2').value,
+        document.getElementById('x3').value,
+        document.getElementById('x4').value]
+
+        var result = nb.classify(row);
+
+        console.log(nb.dataset.classes[result]);
+    }
+
+    function calcularByStr() {
+
+        var row = document.getElementById('x1').value.split(',');
+        row.splice(parseInt(nb.dataset.classCol),1);
+
+        var result = nb.classify(row);
+
+        console.log(nb.dataset.classes[result]);
+    }
+
+    function parse() {
+        var file = document.getElementById('archivo').files[0];
+        var classCol = document.getElementById('classCol').value;
+        Papa.parse(file, {
+            complete: function(results) {
+                nb = new NB(results.data, classCol, 'normal');
+                document.getElementById('calcular').disabled = false;
+                document.getElementById('byStr').disabled = false;
+            }
+        });
+
+
+    }
+
+</script>
+</body>
+</html>
