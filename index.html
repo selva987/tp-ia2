@@ -2,64 +2,183 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>TP IA2 - Naive Bayes</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+
+    <script type="javascript" src="js/jquery-3.5.1.min.js"></script>
+    <script type="javascript" src="js/bootstrap.min.js"></script>
+
     <script type="text/javascript" src="js/papaparse.min.js"></script>
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/function-plot.js"></script>
+    <script type="text/javascript" src="js/vue.js"></script>
+
     <script type="text/javascript" src="js/Class.js"></script>
     <script type="text/javascript" src="js/DataSet.js"></script>
     <script type="text/javascript" src="js/NormalDist.js"></script>
     <script type="text/javascript" src="js/NB.js"></script>
 </head>
 <body>
+<div id="vueArea" class="container">
+    <div class="row">
+        <div class="col-6">
+            <div class="accordion" id="accordionIzquierdo">
+                <div class="card">
+                    <div class="card-header" id="headerCarga">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseCarga" aria-expanded="true" aria-controls="collapseCarga">
+                                Cargar dataset
+                            </button>
+                        </h2>
+                    </div>
 
-<input type="text" id="classCol" size="2">
-<input type="file" id="archivo" onchange="parse();">
+                    <div id="collapseCarga" class="collapse show" aria-labelledby="headerCarga" data-parent="#accordionIzquierdo">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="archivo">Cargar desde archivo</label>
+                                <input type="file" id="archivo" class="form-control-file">
+                            </div>
+                            <div class="form-group">
+                                <label for="classCol">Columna de clase</label>
+                                <input type="number" id="classCol" class="form-control" size="2" value="2">
+                            </div>
+                            <button type="button" class="btn btn-primary" id="parse" @click="parse">Parsear</button>
+                        </div>
+                    </div>
+                </div>
 
-<br>
-<input type="text" id="x1">
-<input type="text" id="x2">
-<input type="text" id="x3">
-<input type="text" id="x4">
-<button id="calcular" type="button" disabled onclick="calcular();">Calcular</button>
-<button id="byStr" type="button" disabled onclick="calcularByStr();">By STR</button>
 
-<span id="res"></span>
+                <div class="card">
+                    <div class="card-header" id="headerDatos">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseDatos" aria-expanded="true" aria-controls="collapseDatos">
+                                Datos
+                            </button>
+                        </h2>
+                    </div>
+
+                    <div id="collapseDatos" class="collapse show" aria-labelledby="headerDatos" data-parent="#accordionIzquierdo">
+                        <div class="card-body">
+                            <div class="d-flex flex-row">
+                                <div v-for="c in dataset.classes" class="card mx-2">
+                                    <div class="card-header">Clase {{ c.name }}</div>
+                                    <div class="card-body">
+                                        <table class="table table-sm table-responsive">
+                                            <tr>
+                                                <th></th>
+                                                <th>Media</th>
+                                                <th>Desvío</th>
+                                            </tr>
+                                            <tr v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol">
+                                                <td>{{ v }}</td>
+                                                <td>{{ c.mu[i] | decimales }}</td>
+                                                <td>{{ c.sigma[i] | decimales }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" id="headerClasificar">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseClasificar" aria-expanded="true" aria-controls="collapseClasificar">
+                                Clasificar
+                            </button>
+                        </h2>
+                    </div>
+
+                    <div id="collapseClasificar" class="collapse show" aria-labelledby="headerClasificar" data-parent="#accordionIzquierdo">
+                        <div class="card-body">
+                            <div class="d-flex flex-row">
+                                <div v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol" class="form-group m-2">
+                                    <label :for="v">{{ v }}</label>
+                                    <input type="text" size="5" :id="v" v-model="arrClasificacion[i]">
+                                </div>
+                            </div>
+                            <button @click="clasificar" type="button" class="btn btn-primary">Clasificar</button>
+                            <p>{{ winner }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div id="graficoPuntos"></div>
+        </div>
+    </div>
+</div>
 
 <script>
     var nb;
-    function calcular() {
-        var row = [document.getElementById('x1').value,
-        document.getElementById('x2').value,
-        document.getElementById('x3').value,
-        document.getElementById('x4').value]
 
-        var result = nb.classify(row);
+    var vue = new Vue({
+        el: '#vueArea',
+        data: {
+            dataset: new DataSet([],''),
+            colorArr: [
+                'blue',
+                'green',
+                'magenta',
+                'cyan',
+            ],
+            arrClasificacion: [],
+            winner: '',
+        },
+        methods: {
+            parse() {
+                var file = document.getElementById('archivo').files[0];
+                var classCol = document.getElementById('classCol').value;
+                Papa.parse(file, {
+                    complete: function (results) {
+                        nb = new NB(results.data, classCol, 'normal');
+                        console.log(nb);
 
-        console.log(nb.dataset.classes[result]);
-    }
+                        vue.dataset = nb.dataset;
+                        vue.arrClasificacion = [];
+                        vue.winner = '';
 
-    function calcularByStr() {
-
-        var row = document.getElementById('x1').value.split(',');
-        row.splice(parseInt(nb.dataset.classCol),1);
-
-        var result = nb.classify(row);
-
-        console.log(nb.dataset.classes[result]);
-    }
-
-    function parse() {
-        var file = document.getElementById('archivo').files[0];
-        var classCol = document.getElementById('classCol').value;
-        Papa.parse(file, {
-            complete: function(results) {
-                nb = new NB(results.data, classCol, 'normal');
-                document.getElementById('calcular').disabled = false;
-                document.getElementById('byStr').disabled = false;
+                        if(nb.dataset.cols.length == 3) {
+                            var plotData = {
+                                target: '#graficoPuntos',
+                                data: [],
+                                grid: true,
+                                xAxis: {
+                                    label: nb.dataset.cols[0],
+                                },
+                                yAxis: {
+                                    label: nb.dataset.cols[1],
+                                },
+                            };
+                            nb.dataset.classes.forEach(function (c, i) {
+                                plotData.data.push({
+                                    points: c.rows,
+                                    fnType: 'points',
+                                    graphType: 'scatter',
+                                    color: vue.colorArr[i],
+                                });
+                            });
+                            functionPlot(plotData);
+                        }
+                    }
+                });
+            },
+            clasificar() {
+                this.winner = '';
+                let result = nb.classify(this.arrClasificacion);
+                this.winner = 'Este elemento parece ser de clase ' + result.name;
             }
-        });
 
-
-    }
+        },
+        filters: {
+            decimales: function(value) {
+                return parseFloat(value).toFixed(4);
+            }
+        }
+    })
 
 </script>
 </body>

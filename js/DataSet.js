@@ -4,8 +4,10 @@ class DataSet {
         this.classCol = classCol;
         this.cols = [];
         this.classes = [];
-        this.parseDataSet();
-        this.train();
+        if(rows.length > 0) {
+            this.parseDataSet();
+            this.train();
+        }
     }
 
 
@@ -51,7 +53,7 @@ class DataSet {
         //los nombres de las columnas y los guardamos para mejor GUI
         row.forEach(function(c, ic) {
             if(ic != this.classCol) { //no hacemos el checkeo sobre la columna de clase porque es muy probable que no sea numerica de todas formas
-                if(Number.isNaN(c)) {
+                if(Number.isNaN(parseFloat(c))) {
                     hasHeaders = true;
                 }
             }
@@ -61,9 +63,9 @@ class DataSet {
         let x = 1;
         row.forEach(function(c, ic) {
             if(ic == this.classCol) {
-                this.cols[ic] = (hasHeaders ? 'Clase' : c);
+                this.cols[ic] = (hasHeaders ? c : 'Clase');
             } else {
-                this.cols[ic] = (hasHeaders ? 'X' + x : c);
+                this.cols[ic] = (hasHeaders ? c : 'X' + x);
                 x++;
             }
         }, this);

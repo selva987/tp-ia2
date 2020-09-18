@@ -31,7 +31,7 @@ class NB {
             }
         }, this);
 
-        return winnerIndex;
+        return classes[winnerIndex];
     }
 
 }
