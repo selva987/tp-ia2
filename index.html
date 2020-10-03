@@ -108,12 +108,14 @@
         </div>
         <div class="col-6">
             <div id="graficoPuntos"></div>
+            <div id="myDiv"></div>
         </div>
     </div>
 </div>
 
 <script>
     var nb;
+    var plot;
 
     var vue = new Vue({
         el: '#vueArea',
@@ -148,9 +150,17 @@
                                 grid: true,
                                 xAxis: {
                                     label: nb.dataset.cols[0],
+                                    domain: [
+                                        nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 - 1),
+                                        nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 + 1),
+                                    ]
                                 },
                                 yAxis: {
                                     label: nb.dataset.cols[1],
+                                    domain: [
+                                        nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) -1,
+                                        nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1,
+                                    ]
                                 },
                             };
                             nb.dataset.classes.forEach(function (c, i) {
@@ -159,9 +169,12 @@
                                     fnType: 'points',
                                     graphType: 'scatter',
                                     color: vue.colorArr[i],
+                                    attr: {
+                                        r: 7,
+                                    }
                                 });
                             });
-                            functionPlot(plotData);
+                            plot = functionPlot(plotData);
                         }
                     }
                 });
@@ -181,5 +194,6 @@
     })
 
 </script>
+
 </body>
 </html>

@@ -4,6 +4,8 @@ class DataSet {
         this.classCol = classCol;
         this.cols = [];
         this.classes = [];
+        this.min = [];
+        this.max = [];
         if(rows.length > 0) {
             this.parseDataSet();
             this.train();
@@ -14,14 +16,21 @@ class DataSet {
     parseDataSet() {
         //Separo las filas en sus correspondientes clases
         this.rows.forEach(function(e,i) {
+            if(e.length < 2) return;
             if(i == 0) {
-                this.loadHeaders(e);
+                //Si la funcion devuelve true es porque el dataset tiene nombres de columnas y las ignoro
+                if(this.loadHeaders(e)) return;
             }
 
             let className = e[this.classCol];
             let classRow = this.getIndexByClass(className);
             //las rows dentro de las clases no contienen la columna de clase
             e.splice(this.classCol, 1)
+            e.forEach(function(r,i) {
+                r = parseFloat(r);
+                if(this.min[i] == null || r < this.min[i]) this.min[i] = r;
+                if(this.max[i] == null || r > this.max[i]) this.max[i] = r;
+            }, this);
             this.classes[classRow].rows.push(e);
         }, this);
     }
@@ -69,5 +78,7 @@ class DataSet {
                 x++;
             }
         }, this);
+
+        return hasHeaders;
     }
 }

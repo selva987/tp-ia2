@@ -5,6 +5,8 @@ class Class {
         this.priori = 0;
         this.mu = [];
         this.sigma = [];
+        this.max = [];
+        this.min = [];
     }
 
     train(n) {
@@ -15,7 +17,8 @@ class Class {
         for(let i = 0 ; i < this.rows[0].length ; i++) {
             sumatoria = 0;
             this.rows.forEach(function (r) {
-                sumatoria+= parseFloat(r[i]);
+                r[i] = parseFloat(r[i]);
+                sumatoria+= r[i];
             });
             this.mu[i] = sumatoria / this.rows.length;
         }
