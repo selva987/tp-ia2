@@ -5,8 +5,9 @@
     <title>TP IA2 - Naive Bayes</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
 
-    <script type="javascript" src="js/jquery-3.5.1.min.js"></script>
-    <script type="javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript" src="js/popper.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
 
     <script type="text/javascript" src="js/papaparse.min.js"></script>
     <script type="text/javascript" src="js/d3.min.js"></script>
@@ -27,7 +28,7 @@
                     <div class="card-header" id="headerCarga">
                         <h2 class="mb-0">
                             <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseCarga" aria-expanded="true" aria-controls="collapseCarga">
-                                Cargar dataset
+                                Dataset
                             </button>
                         </h2>
                     </div>
@@ -35,8 +36,12 @@
                     <div id="collapseCarga" class="collapse show" aria-labelledby="headerCarga" data-parent="#accordionIzquierdo">
                         <div class="card-body">
                             <div class="form-group">
-                                <label for="archivo">Cargar desde archivo</label>
+                                <label for="archivo">Archivo dataset</label>
                                 <input type="file" id="archivo" class="form-control-file">
+                            </div>
+                            <div class="form-group">
+                                <label for="validacion">Archivo de validación</label>
+                                <input type="file" id="validacion" class="form-control-file">
                             </div>
                             <div class="form-group">
                                 <label for="classCol">Columna de clase</label>
@@ -60,23 +65,36 @@
                     <div id="collapseDatos" class="collapse show" aria-labelledby="headerDatos" data-parent="#accordionIzquierdo">
                         <div class="card-body">
                             <div class="d-flex flex-row">
-                                <div v-for="c in dataset.classes" class="card mx-2">
-                                    <div class="card-header">Clase {{ c.name }}</div>
+                                <div v-if="datosValidados != null" class="card mx-2">
+                                    <div class="card-header">Validación</div>
                                     <div class="card-body">
-                                        <table class="table table-sm table-responsive">
-                                            <tr>
-                                                <th></th>
-                                                <th>Media</th>
-                                                <th>Desvío</th>
-                                            </tr>
-                                            <tr v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol">
-                                                <td>{{ v }}</td>
-                                                <td>{{ c.mu[i] | decimales }}</td>
-                                                <td>{{ c.sigma[i] | decimales }}</td>
-                                            </tr>
-                                        </table>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item"><b>Correctos:</b> {{ datosValidados.pass.length }}</li>
+                                            <li class="list-group-item"><b>Incorrectos:</b> {{ datosValidados.fail.length }}</li>
+                                            <li class="list-group-item"><b>Total:</b> {{ datosValidados.total }}</li>
+                                            <li class="list-group-item"><b>Resultado:</b> <span :class="porcentajeValidacion > 90 ? 'text-success' : porcentajeValidacion < 60 ? 'text-danger' : 'text-warning'">{{ porcentajeValidacion.toFixed(2) }}%</span></li>
+                                        </ul>
                                     </div>
                                 </div>
+
+
+<!--                                <div v-for="c in dataset.classes" class="card mx-2">-->
+<!--                                    <div class="card-header">Clase {{ c.name }}</div>-->
+<!--                                    <div class="card-body">-->
+<!--                                        <table class="table table-sm table-responsive">-->
+<!--                                            <tr>-->
+<!--                                                <th></th>-->
+<!--                                                <th>Media</th>-->
+<!--                                                <th>Desvío</th>-->
+<!--                                            </tr>-->
+<!--                                            <tr v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol">-->
+<!--                                                <td>{{ v }}</td>-->
+<!--                                                <td>{{ c.mu[i] | decimales }}</td>-->
+<!--                                                <td>{{ c.sigma[i] | decimales }}</td>-->
+<!--                                            </tr>-->
+<!--                                        </table>-->
+<!--                                    </div>-->
+<!--                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -120,6 +138,8 @@
     var vue = new Vue({
         el: '#vueArea',
         data: {
+            nb: null,
+            datosValidados: null,
             dataset: new DataSet([],''),
             colorArr: [
                 'blue',
@@ -137,7 +157,6 @@
                 Papa.parse(file, {
                     complete: function (results) {
                         nb = new NB(results.data, classCol, 'normal');
-                        console.log(nb);
 
                         vue.dataset = nb.dataset;
                         vue.arrClasificacion = [];
@@ -175,6 +194,8 @@
                                 });
                             });
                             plot = functionPlot(plotData);
+                            vue.nb = nb;
+                            vue.validar();
                         }
                     }
                 });
@@ -183,8 +204,26 @@
                 this.winner = '';
                 let result = nb.classify(this.arrClasificacion);
                 this.winner = 'Este elemento parece ser de clase ' + result.name;
+            },
+            validar() {
+                if(document.getElementById('validacion').value !== '') {
+                    var file = document.getElementById('validacion').files[0];
+                    Papa.parse(file, {
+                        complete: function (results) {
+                            vue.datosValidados = vue.nb.validate(results.data);
+                        }
+                    })
+                }
             }
 
+        },
+        computed: {
+            porcentajeValidacion: function() {
+                if(this.datosValidados != null) {
+                    return (this.datosValidados.pass.length / this.datosValidados.total) * 100;
+                }
+                return null;
+            }
         },
         filters: {
             decimales: function(value) {
