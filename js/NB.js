@@ -57,4 +57,31 @@ class NB {
         return classes[winnerIndex];
     }
 
+    getMalla(minX1, maxX1, minX2, maxX2, ajusteIntervalo) {
+        let x1 = minX1;
+        let x2 = minX2;
+        let result;
+
+        let intervaloX1 = (maxX1 - minX1) * ajusteIntervalo;
+        let intervaloX2 = (maxX2 - minX2) * ajusteIntervalo;
+
+        let malla = [];
+        this.dataset.classes.forEach(function(e,i){malla[i] = [];});
+
+        while(x1 <= maxX1) {
+            x2 = minX2;
+
+            while(x2 <= maxX2) {
+                result = this.classify([x1,x2]);
+                malla[this.dataset.classes.indexOf(result)].push([x1,x2]);
+
+                x2+= intervaloX2;
+            }
+
+            x1+= intervaloX1;
+        }
+
+        return malla;
+    }
+
 }

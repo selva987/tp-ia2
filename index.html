@@ -33,7 +33,7 @@
                         </h2>
                     </div>
 
-                    <div id="collapseCarga" class="collapse show" aria-labelledby="headerCarga" data-parent="#accordionIzquierdo">
+                    <div id="collapseCarga" class="collapse show" aria-labelledby="headerCarga" >
                         <div class="card-body">
                             <div class="form-group">
                                 <label for="archivo">Archivo dataset</label>
@@ -62,7 +62,7 @@
                         </h2>
                     </div>
 
-                    <div id="collapseDatos" class="collapse show" aria-labelledby="headerDatos" data-parent="#accordionIzquierdo">
+                    <div id="collapseDatos" class="collapse show" aria-labelledby="headerDatos" >
                         <div class="card-body">
                             <div class="d-flex flex-row">
                                 <div v-if="datosValidados != null" class="card mx-2">
@@ -78,23 +78,23 @@
                                 </div>
 
 
-<!--                                <div v-for="c in dataset.classes" class="card mx-2">-->
-<!--                                    <div class="card-header">Clase {{ c.name }}</div>-->
-<!--                                    <div class="card-body">-->
-<!--                                        <table class="table table-sm table-responsive">-->
-<!--                                            <tr>-->
-<!--                                                <th></th>-->
-<!--                                                <th>Media</th>-->
-<!--                                                <th>Desvío</th>-->
-<!--                                            </tr>-->
-<!--                                            <tr v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol">-->
-<!--                                                <td>{{ v }}</td>-->
-<!--                                                <td>{{ c.mu[i] | decimales }}</td>-->
-<!--                                                <td>{{ c.sigma[i] | decimales }}</td>-->
-<!--                                            </tr>-->
-<!--                                        </table>-->
-<!--                                    </div>-->
-<!--                                </div>-->
+                                <div v-for="(c,i) in dataset.classes" class="card mx-2">
+                                    <div class="card-header" :style="'color:' + colorArr[i]">Clase {{ c.name }}</div>
+                                    <div class="card-body">
+                                        <table class="table table-sm table-responsive">
+                                            <tr>
+                                                <th></th>
+                                                <th>Media</th>
+                                                <th>Desvío</th>
+                                            </tr>
+                                            <tr v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol">
+                                                <td>{{ v }}</td>
+                                                <td>{{ c.mu[i] | decimales }}</td>
+                                                <td>{{ c.sigma[i] | decimales }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -109,7 +109,7 @@
                         </h2>
                     </div>
 
-                    <div id="collapseClasificar" class="collapse show" aria-labelledby="headerClasificar" data-parent="#accordionIzquierdo">
+                    <div id="collapseClasificar" class="collapse show" aria-labelledby="headerClasificar" >
                         <div class="card-body">
                             <div class="d-flex flex-row">
                                 <div v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol" class="form-group m-2">
@@ -142,10 +142,12 @@
             datosValidados: null,
             dataset: new DataSet([],''),
             colorArr: [
-                'blue',
-                'green',
-                'magenta',
-                'cyan',
+                '#28a745',
+                '#007bff',
+                '#dc3545',
+                '#ffc107',
+                '#343a40',
+                '#17a2b8',
             ],
             arrClasificacion: [],
             winner: '',
@@ -163,6 +165,12 @@
                         vue.winner = '';
 
                         if(nb.dataset.cols.length == 3) {
+                            let minX1 = nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 - 1);
+                            let maxX1 = nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 + 1);
+
+                            let minX2 = nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) -1;
+                            let maxX2 = nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1;
+
                             var plotData = {
                                 target: '#graficoPuntos',
                                 data: [],
@@ -170,18 +178,33 @@
                                 xAxis: {
                                     label: nb.dataset.cols[0],
                                     domain: [
-                                        nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 - 1),
-                                        nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 + 1),
+                                        minX1,
+                                        maxX1,
                                     ]
                                 },
                                 yAxis: {
                                     label: nb.dataset.cols[1],
                                     domain: [
-                                        nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) -1,
-                                        nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1,
+                                        minX2,
+                                        maxX2,
                                     ]
                                 },
                             };
+
+                            let malla = nb.getMalla(minX1, maxX1, minX2, maxX2, 0.03);
+                            console.log(malla);
+                            malla.forEach(function(c,i) {
+                                plotData.data.push({
+                                    points: c,
+                                    fnType: 'points',
+                                    graphType: 'scatter',
+                                    color: vue.colorArr[i],
+                                    attr: {
+                                        r: 3,
+                                    }
+                                })
+                            });
+
                             nb.dataset.classes.forEach(function (c, i) {
                                 plotData.data.push({
                                     points: c.rows,
