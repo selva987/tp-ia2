@@ -20,14 +20,14 @@
     <script type="text/javascript" src="js/NB.js"></script>
 </head>
 <body>
-<div id="vueArea" class="container">
+<div id="vueArea" class="container-fluid">
     <div class="row">
         <div class="col-6">
             <div class="accordion" id="accordionIzquierdo">
                 <div class="card">
                     <div class="card-header" id="headerCarga">
                         <h2 class="mb-0">
-                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseCarga" aria-expanded="true" aria-controls="collapseCarga">
+                            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseCarga" aria-expanded="true" aria-controls="collapseCarga">
                                 Dataset
                             </button>
                         </h2>
@@ -45,7 +45,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="classCol">Columna de clase</label>
-                                <input type="number" id="classCol" class="form-control" size="2" value="2">
+                                <input type="number" id="classCol" class="form-control form-control-sm col-2" size="2" value="2">
                             </div>
                             <button type="button" class="btn btn-primary" id="parse" @click="parse">Parsear</button>
                         </div>
@@ -56,31 +56,22 @@
                 <div class="card">
                     <div class="card-header" id="headerDatos">
                         <h2 class="mb-0">
-                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseDatos" aria-expanded="true" aria-controls="collapseDatos">
+                            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseDatos" aria-expanded="true" aria-controls="collapseDatos">
                                 Datos
                             </button>
                         </h2>
                     </div>
 
-                    <div id="collapseDatos" class="collapse show" aria-labelledby="headerDatos" >
+                    <div id="collapseDatos" class="collapse" aria-labelledby="headerDatos" >
                         <div class="card-body">
-                            <div class="d-flex flex-row">
-                                <div v-if="datosValidados != null" class="card mx-2">
-                                    <div class="card-header">Validación</div>
-                                    <div class="card-body">
-                                        <ul class="list-group list-group-flush">
-                                            <li class="list-group-item"><b>Correctos:</b> {{ datosValidados.pass.length }}</li>
-                                            <li class="list-group-item"><b>Incorrectos:</b> {{ datosValidados.fail.length }}</li>
-                                            <li class="list-group-item"><b>Total:</b> {{ datosValidados.total }}</li>
-                                            <li class="list-group-item"><b>Resultado:</b> <span :class="porcentajeValidacion > 90 ? 'text-success' : porcentajeValidacion < 60 ? 'text-danger' : 'text-warning'">{{ porcentajeValidacion.toFixed(2) }}%</span></li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-
-                                <div v-for="(c,i) in dataset.classes" class="card mx-2">
+                            <div class="d-flex flex-wrap">
+                                <div v-for="(c,i) in dataset.classes" class="card m-2">
                                     <div class="card-header" :style="'color:' + colorArr[i]">Clase {{ c.name }}</div>
                                     <div class="card-body">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item"><b>Cantidad:</b> {{ c.rows.length }}</li>
+                                            <li class="list-group-item"><b>Prob. priori:</b> {{ c.priori | decimales }}</li>
+                                        </ul>
                                         <table class="table table-sm table-responsive">
                                             <tr>
                                                 <th></th>
@@ -95,6 +86,18 @@
                                         </table>
                                     </div>
                                 </div>
+
+                                <div v-if="datosValidados != null" class="card m-2">
+                                    <div class="card-header">Validación</div>
+                                    <div class="card-body">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item"><b>Correctos:</b> {{ datosValidados.pass.length }}</li>
+                                            <li class="list-group-item"><b>Incorrectos:</b> {{ datosValidados.fail.length }}</li>
+                                            <li class="list-group-item"><b>Total:</b> {{ datosValidados.total }}</li>
+                                            <li class="list-group-item"><b>Resultado:</b> <span :class="porcentajeValidacion > 90 ? 'text-success' : porcentajeValidacion < 60 ? 'text-danger' : 'text-warning'">{{ porcentajeValidacion.toFixed(2) }}%</span></li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -103,30 +106,62 @@
                 <div class="card">
                     <div class="card-header" id="headerClasificar">
                         <h2 class="mb-0">
-                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseClasificar" aria-expanded="true" aria-controls="collapseClasificar">
+                            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseClasificar" aria-expanded="true" aria-controls="collapseClasificar">
                                 Clasificar
                             </button>
                         </h2>
                     </div>
 
-                    <div id="collapseClasificar" class="collapse show" aria-labelledby="headerClasificar" >
+                    <div id="collapseClasificar" class="collapse" aria-labelledby="headerClasificar" >
                         <div class="card-body">
-                            <div class="d-flex flex-row">
-                                <div v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol" class="form-group m-2">
-                                    <label :for="v">{{ v }}</label>
-                                    <input type="text" size="5" :id="v" v-model="arrClasificacion[i]">
+                            <div class="d-flex flex-wrap">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Clasificar un punto</h5>
+                                        <div class="d-flex flex-wrap">
+                                            <div v-for="(v,i) in dataset.cols" v-if="i != dataset.classCol" class="form-group m-2">
+                                                <label :for="v">{{ v }}</label>
+                                                <input type="text" size="5" :id="v" v-model="arrClasificacion[i]">
+                                            </div>
+                                        </div>
+                                        <a href="#" @click="clasificar" class="btn btn-primary card-link">Clasificar</a>
+                                        <p>{{ winner }}</p>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Clasificar desde archivo</h5>
+                                        <div class="form-group">
+                                            <label for="archivo">Archivo dataset</label>
+                                            <input type="file" id="archivoClasificacion" class="form-control-file">
+                                        </div>
+                                        <button type="button" class="btn btn-primary" id="clasificarDesdeArchivo" @click="clasificarDesdeArchivo">Parsear</button>
+                                    </div>
                                 </div>
                             </div>
-                            <button @click="clasificar" type="button" class="btn btn-primary">Clasificar</button>
-                            <p>{{ winner }}</p>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-6">
-            <div id="graficoPuntos"></div>
-            <div id="myDiv"></div>
+            <div id="cardGraficoPuntos" class="card invisible">
+                <div class="card-header">
+                    Gráfico del Dataset
+                </div>
+                <div class="card-body">
+                    <div id="graficoPuntos" style="width: 100%"></div>
+                </div>
+            </div>
+            <div id="cardGraficoClasificacion" class="card invisible">
+                <div class="card-header">
+                    Gráfico del Dataset
+                </div>
+                <div class="card-body">
+                    <div id="graficoClasificacion" style="width: 100%"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -165,8 +200,8 @@
                         vue.winner = '';
 
                         if(nb.dataset.cols.length == 3) {
-                            let minX1 = nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 - 1);
-                            let maxX1 = nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1 + 1);
+                            let minX1 = nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) - 1;
+                            let maxX1 = nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) + 1;
 
                             let minX2 = nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) -1;
                             let maxX2 = nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1;
@@ -191,8 +226,7 @@
                                 },
                             };
 
-                            let malla = nb.getMalla(minX1, maxX1, minX2, maxX2, 0.03);
-                            console.log(malla);
+                            let malla = nb.getMalla(minX1, maxX1, minX2, maxX2, 0.04);
                             malla.forEach(function(c,i) {
                                 plotData.data.push({
                                     points: c,
@@ -200,7 +234,7 @@
                                     graphType: 'scatter',
                                     color: vue.colorArr[i],
                                     attr: {
-                                        r: 3,
+                                        r: 2,
                                     }
                                 })
                             });
@@ -219,7 +253,14 @@
                             plot = functionPlot(plotData);
                             vue.nb = nb;
                             vue.validar();
+                            $('#cardGraficoPuntos').removeClass('invisible');
+                        } else {
+                            $('#cardGraficoPuntos').addClass('invisible');
                         }
+                        $('#cardGraficoClasificacion').addClass('invisible');
+                        $('#collapseCarga').collapse('hide');
+                        $('#collapseDatos').collapse('show');
+                        $('#collapseClasificar').collapse('show');
                     }
                 });
             },
@@ -227,6 +268,55 @@
                 this.winner = '';
                 let result = nb.classify(this.arrClasificacion);
                 this.winner = 'Este elemento parece ser de clase ' + result.name;
+            },
+            clasificarDesdeArchivo() {
+                var file = document.getElementById('archivoClasificacion').files[0];
+                Papa.parse(file, {
+                    complete: function (results) {
+                        let retorno = vue.nb.clasificarByArray(results.data);
+                        console.log(retorno);
+
+                        let minX1 = vue.nb.dataset.min[0] - ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) - 1;
+                        let maxX1 = vue.nb.dataset.max[0] + ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) + 1;
+
+                        let minX2 = vue.nb.dataset.min[1] - ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) -1;
+                        let maxX2 = vue.nb.dataset.max[1] + ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) + 1;
+                        $('#cardGraficoClasificacion').removeClass('invisible');
+                        var plotData = {
+                            target: '#graficoClasificacion',
+                            data: [],
+                            grid: true,
+                            xAxis: {
+                                label: vue.nb.dataset.cols[0],
+                                domain: [
+                                    minX1,
+                                    maxX1,
+                                ]
+                            },
+                            yAxis: {
+                                label: vue.nb.dataset.cols[1],
+                                domain: [
+                                    minX2,
+                                    maxX2,
+                                ]
+                            },
+                        };
+
+                        retorno.forEach(function(c,i) {
+                            plotData.data.push({
+                                points: c,
+                                fnType: 'points',
+                                graphType: 'scatter',
+                                color: vue.colorArr[i],
+                                attr: {
+                                    r: 7,
+                                }
+                            })
+                        });
+                        plot = functionPlot(plotData);
+
+                    },
+                });
             },
             validar() {
                 if(document.getElementById('validacion').value !== '') {

@@ -84,4 +84,19 @@ class NB {
         return malla;
     }
 
+    clasificarByArray(arr) {
+        let retorno = [];
+        let result;
+        this.dataset.classes.forEach(function(e,i){retorno[i] = [];});
+
+        arr.forEach(function(e) {
+            if(e.length > 1 && !isNaN(parseFloat(e[0]))) {
+                result = this.classify(e);
+                retorno[this.dataset.classes.indexOf(result)].push(e);
+            }
+        },this)
+
+        return retorno;
+    }
+
 }

@@ -38,7 +38,7 @@ class DataSet {
     train() {
         //Calculo probabilidades para cada clase
         this.classes.forEach(function(e) {
-            e.train(this.rows.length);
+            e.train(this.hasHeaders ? this.rows.length -1 : this.rows.length);
         }, this);
     }
 
@@ -78,6 +78,8 @@ class DataSet {
                 x++;
             }
         }, this);
+
+        this.hasHeaders = hasHeaders;
 
         return hasHeaders;
     }
