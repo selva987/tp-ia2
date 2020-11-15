@@ -115,7 +115,7 @@
                     <div id="collapseClasificar" class="collapse" aria-labelledby="headerClasificar" >
                         <div class="card-body">
                             <div class="d-flex flex-wrap">
-                                <div class="card">
+                                <div class="card m-2">
                                     <div class="card-body">
                                         <h5 class="card-title">Clasificar un punto</h5>
                                         <div class="d-flex flex-wrap">
@@ -128,14 +128,15 @@
                                         <p>{{ winner }}</p>
                                     </div>
                                 </div>
-                                <div class="card">
+                                <div class="card m-2">
                                     <div class="card-body">
-                                        <h5 class="card-title">Clasificar desde archivo</h5>
+                                        <h5 class="card-title">Cargar archivo de test</h5>
                                         <div class="form-group">
-                                            <label for="archivo">Archivo dataset</label>
-                                            <input type="file" id="archivoClasificacion" class="form-control-file">
+                                            <label for="archivo">Archivo test</label>
+                                            <input type="file" id="archivoTest" class="form-control-file">
                                         </div>
-                                        <button type="button" class="btn btn-primary" id="clasificarDesdeArchivo" @click="clasificarDesdeArchivo">Parsear</button>
+                                        <button type="button" class="btn btn-primary" id="parseArchivoTest" @click="parseArchivoTest">Parsear</button>
+                                        <p v-if="datosTest != null"><b>Resultado:</b> <span :class="porcentajeTest > 90 ? 'text-success' : porcentajeTest < 60 ? 'text-danger' : 'text-warning'">{{ porcentajeTest.toFixed(2) }}%</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -156,10 +157,10 @@
             </div>
             <div id="cardGraficoClasificacion" class="card invisible">
                 <div class="card-header">
-                    Gráfico del Dataset
+                    Gráfico del archivo de test
                 </div>
                 <div class="card-body">
-                    <div id="graficoClasificacion" style="width: 100%"></div>
+                    <div id="graficoTest" style="width: 100%"></div>
                 </div>
             </div>
         </div>
@@ -175,6 +176,7 @@
         data: {
             nb: null,
             datosValidados: null,
+            datosTest: null,
             dataset: new DataSet([],''),
             colorArr: [
                 '#28a745',
@@ -191,34 +193,127 @@
             parse() {
                 var file = document.getElementById('archivo').files[0];
                 var classCol = document.getElementById('classCol').value;
+                try {
+                    Papa.parse(file, {
+                        complete: function (results) {
+                            console.log(results);
+                            try {
+                                nb = new NB(results.data, classCol, 'normal');
+                            } catch (e) {
+                                alert(e.message);
+                                return;
+                            }
+
+                            vue.dataset = nb.dataset;
+                            vue.arrClasificacion = [];
+                            vue.winner = '';
+                            vue.datosValidados = null;
+                            vue.datosTest = null;
+
+                            $('#graficoPuntos').html('');
+                            $('#graficoTest').html('');
+
+                            if (nb.dataset.cols.length == 3) {
+                                let minX1 = nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) - 1;
+                                let maxX1 = nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) + 1;
+
+                                let minX2 = nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) - 1;
+                                let maxX2 = nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1;
+
+                                var plotData = {
+                                    target: '#graficoPuntos',
+                                    data: [],
+                                    grid: true,
+                                    xAxis: {
+                                        label: nb.dataset.cols[0],
+                                        domain: [
+                                            minX1,
+                                            maxX1,
+                                        ]
+                                    },
+                                    yAxis: {
+                                        label: nb.dataset.cols[1],
+                                        domain: [
+                                            minX2,
+                                            maxX2,
+                                        ]
+                                    },
+                                };
+
+                                let malla = nb.getMalla(minX1, maxX1, minX2, maxX2, 0.04);
+                                malla.forEach(function (c, i) {
+                                    plotData.data.push({
+                                        points: c,
+                                        fnType: 'points',
+                                        graphType: 'scatter',
+                                        color: vue.colorArr[i],
+                                        attr: {
+                                            r: 2,
+                                        }
+                                    })
+                                });
+
+                                nb.dataset.classes.forEach(function (c, i) {
+                                    plotData.data.push({
+                                        points: c.rows,
+                                        fnType: 'points',
+                                        graphType: 'scatter',
+                                        color: vue.colorArr[i],
+                                        attr: {
+                                            r: 7,
+                                        }
+                                    });
+                                });
+                                plot = functionPlot(plotData);
+                                vue.nb = nb;
+                                vue.validar();
+                                $('#cardGraficoPuntos').removeClass('invisible');
+                            } else {
+                                $('#cardGraficoPuntos').addClass('invisible');
+                            }
+                            $('#cardGraficoClasificacion').addClass('invisible');
+                            $('#collapseCarga').collapse('hide');
+                            $('#collapseDatos').collapse('show');
+                            $('#collapseClasificar').collapse('show');
+                        }
+                    });
+                }catch (e) {
+                    alert('Error al cargar el dataset');
+                }
+            },
+            clasificar() {
+                this.winner = '';
+                let result = nb.classify(this.arrClasificacion);
+                this.winner = 'Este elemento parece ser de clase ' + result.name;
+            },
+            parseArchivoTest() {
+                var file = document.getElementById('archivoTest').files[0];
                 Papa.parse(file, {
                     complete: function (results) {
-                        nb = new NB(results.data, classCol, 'normal');
+                        vue.datosTest = vue.nb.validate(results.data);
 
-                        vue.dataset = nb.dataset;
-                        vue.arrClasificacion = [];
-                        vue.winner = '';
+                        if(vue.nb.dataset.cols.length <= 3) {
+                            let retorno = vue.nb.clasificarByArray(results.data);
 
-                        if(nb.dataset.cols.length == 3) {
-                            let minX1 = nb.dataset.min[0] - ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) - 1;
-                            let maxX1 = nb.dataset.max[0] + ((nb.dataset.max[0] - nb.dataset.min[0]) * 0.1) + 1;
+                            let minX1 = vue.nb.dataset.min[0] - ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) - 1;
+                            let maxX1 = vue.nb.dataset.max[0] + ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) + 1;
 
-                            let minX2 = nb.dataset.min[1] - ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) -1;
-                            let maxX2 = nb.dataset.max[1] + ((nb.dataset.max[1] - nb.dataset.min[1]) * 0.1) + 1;
-
+                            let minX2 = vue.nb.dataset.min[1] - ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) - 1;
+                            let maxX2 = vue.nb.dataset.max[1] + ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) + 1;
+                            $('#cardGraficoClasificacion').removeClass('invisible');
                             var plotData = {
-                                target: '#graficoPuntos',
+                                target: '#graficoTest',
                                 data: [],
                                 grid: true,
                                 xAxis: {
-                                    label: nb.dataset.cols[0],
+                                    label: vue.nb.dataset.cols[0],
                                     domain: [
                                         minX1,
                                         maxX1,
                                     ]
                                 },
                                 yAxis: {
-                                    label: nb.dataset.cols[1],
+                                    label: vue.nb.dataset.cols[1],
                                     domain: [
                                         minX2,
                                         maxX2,
@@ -226,95 +321,19 @@
                                 },
                             };
 
-                            let malla = nb.getMalla(minX1, maxX1, minX2, maxX2, 0.04);
-                            malla.forEach(function(c,i) {
+                            retorno.forEach(function (c, i) {
                                 plotData.data.push({
                                     points: c,
                                     fnType: 'points',
                                     graphType: 'scatter',
                                     color: vue.colorArr[i],
                                     attr: {
-                                        r: 2,
+                                        r: 7,
                                     }
                                 })
                             });
-
-                            nb.dataset.classes.forEach(function (c, i) {
-                                plotData.data.push({
-                                    points: c.rows,
-                                    fnType: 'points',
-                                    graphType: 'scatter',
-                                    color: vue.colorArr[i],
-                                    attr: {
-                                        r: 7,
-                                    }
-                                });
-                            });
                             plot = functionPlot(plotData);
-                            vue.nb = nb;
-                            vue.validar();
-                            $('#cardGraficoPuntos').removeClass('invisible');
-                        } else {
-                            $('#cardGraficoPuntos').addClass('invisible');
                         }
-                        $('#cardGraficoClasificacion').addClass('invisible');
-                        $('#collapseCarga').collapse('hide');
-                        $('#collapseDatos').collapse('show');
-                        $('#collapseClasificar').collapse('show');
-                    }
-                });
-            },
-            clasificar() {
-                this.winner = '';
-                let result = nb.classify(this.arrClasificacion);
-                this.winner = 'Este elemento parece ser de clase ' + result.name;
-            },
-            clasificarDesdeArchivo() {
-                var file = document.getElementById('archivoClasificacion').files[0];
-                Papa.parse(file, {
-                    complete: function (results) {
-                        let retorno = vue.nb.clasificarByArray(results.data);
-                        console.log(retorno);
-
-                        let minX1 = vue.nb.dataset.min[0] - ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) - 1;
-                        let maxX1 = vue.nb.dataset.max[0] + ((vue.nb.dataset.max[0] - vue.nb.dataset.min[0]) * 0.1) + 1;
-
-                        let minX2 = vue.nb.dataset.min[1] - ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) -1;
-                        let maxX2 = vue.nb.dataset.max[1] + ((vue.nb.dataset.max[1] - vue.nb.dataset.min[1]) * 0.1) + 1;
-                        $('#cardGraficoClasificacion').removeClass('invisible');
-                        var plotData = {
-                            target: '#graficoClasificacion',
-                            data: [],
-                            grid: true,
-                            xAxis: {
-                                label: vue.nb.dataset.cols[0],
-                                domain: [
-                                    minX1,
-                                    maxX1,
-                                ]
-                            },
-                            yAxis: {
-                                label: vue.nb.dataset.cols[1],
-                                domain: [
-                                    minX2,
-                                    maxX2,
-                                ]
-                            },
-                        };
-
-                        retorno.forEach(function(c,i) {
-                            plotData.data.push({
-                                points: c,
-                                fnType: 'points',
-                                graphType: 'scatter',
-                                color: vue.colorArr[i],
-                                attr: {
-                                    r: 7,
-                                }
-                            })
-                        });
-                        plot = functionPlot(plotData);
-
                     },
                 });
             },
@@ -334,6 +353,12 @@
             porcentajeValidacion: function() {
                 if(this.datosValidados != null) {
                     return (this.datosValidados.pass.length / this.datosValidados.total) * 100;
+                }
+                return null;
+            },
+            porcentajeTest: function() {
+                if(this.datosTest != null) {
+                    return (this.datosTest.pass.length / this.datosTest.total) * 100;
                 }
                 return null;
             }

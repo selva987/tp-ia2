@@ -44,6 +44,9 @@ class DataSet {
 
     getIndexByClass(name) {
         let index = null;
+        if(name == '' || typeof name === 'undefined') {
+            throw  new Error('El dataset contiene nombres de clase vacíos');
+        }
         this.classes.forEach(function(e,i) {
             if(name == e.name) index = i;
         }, this);
